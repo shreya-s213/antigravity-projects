@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Neon Snake Player</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- React & ReactDOM -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  
+  <!-- Babel for JSX -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    body { background-color: #020617; margin: 0; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useCallback } = React;
+
+    // --- Constants & Config ---
+    const GRID_SIZE = 20;
+    const INITIAL_SNAKE = [{ x: 10, y: 10 }];
+    const INITIAL_DIRECTION = { x: 0, y: -1 }; 
+    const GAME_SPEED = 120; 
+
+    const PLAYLIST = [
+      { id: 1, title: "Neon Grid Algorithm", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" },
+      { id: 2, title: "Cybernetic Pulse", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" },
+      { id: 3, title: "Synthwave Matrix", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3" }
+    ];
+
+    // --- Custom SVG Icons ---
+    const IconPlay = () => <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>;
+    const IconPause = () => <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>;
+    const IconSkipBack = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="19 20 9 12 19 4 19 20"></polygon><line x1="5" y1="19" x2="5" y2="5"></line></svg>;
+    const IconSkipForward = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></svg>;
+    const IconRefresh = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"></polyline><polyline points="23 20 23 14 17 14"></polyline><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path></svg>;
+    const IconVolume2 = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>;
+    const IconVolumeX = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>;
+
+    function NeonSnakePlayer() {
+      const [snake, setSnake] = useState(INITIAL_SNAKE);
+      const [direction, setDirection] = useState(INITIAL_DIRECTION);
+      const [food, setFood] = useState({ x: 15, y: 5 });
+      const [score, setScore] = useState(0);
+      const [gameOver, setGameOver] = useState(false);
+      const [gameStarted, setGameStarted] = useState(false);
+      const currentDirectionRef = useRef(INITIAL_DIRECTION);
+
+      const [currentTrackIdx, setCurrentTrackIdx] = useState(0);
+      const [isPlaying, setIsPlaying] = useState(false);
+      const [isMuted, setIsMuted] = useState(false);
+      const audioRef = useRef(null);
+
+      const generateFood = useCallback((currentSnake) => {
+        let newFood;
+        while (true) {
+          newFood = {
+            x: Math.floor(Math.random() * GRID_SIZE),
+            y: Math.floor(Math.random() * GRID_SIZE),
+          };
+          const onSnake = currentSnake.some(segment => segment.x === newFood.x && segment.y === newFood.y);
+          if (!onSnake) break;
+        }
+        return newFood;
+      }, []);
+
+      const resetGame = () => {
+        setSnake(INITIAL_SNAKE);
+        setDirection(INITIAL_DIRECTION);
+        currentDirectionRef.current = INITIAL_DIRECTION;
+        setScore(0);
+        setGameOver(false);
+        setGameStarted(true);
+        setFood(generateFood(INITIAL_SNAKE));
+        if (!isPlaying) togglePlay();
+      };
+
+      useEffect(() => {
+        const handleKeyDown = (e) => {
+          if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
+            e.preventDefault();
+          }
+
+          if (e.key === ' ' && (!gameStarted || gameOver)) {
+            resetGame();
+            return;
+          }
+
+          if (!gameStarted || gameOver) return;
+
+          const { x, y } = currentDirectionRef.current;
+          switch (e.key) {
+            case 'ArrowUp':
+            case 'w': if (y !== 1) setDirection({ x: 0, y: -1 }); break;
+            case 'ArrowDown':
+            case 's': if (y !== -1) setDirection({ x: 0, y: 1 }); break;
+            case 'ArrowLeft':
+            case 'a': if (x !== 1) setDirection({ x: -1, y: 0 }); break;
+            case 'ArrowRight':
+            case 'd': if (x !== -1) setDirection({ x: 1, y: 0 }); break;
+          }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+      }, [gameStarted, gameOver]);
+
+      useEffect(() => {
+        if (!gameStarted || gameOver) return;
+
+        const moveSnake = () => {
+          setSnake((prevSnake) => {
+            const head = prevSnake[0];
+            const newHead = { x: head.x + direction.x, y: head.y + direction.y };
+
+            if (newHead.x < 0 || newHead.x >= GRID_SIZE || newHead.y < 0 || newHead.y >= GRID_SIZE) {
+              setGameOver(true); return prevSnake;
+            }
+            if (prevSnake.some(segment => segment.x === newHead.x && segment.y === newHead.y)) {
+              setGameOver(true); return prevSnake;
+            }
+
+            const newSnake = [newHead, ...prevSnake];
+            if (newHead.x === food.x && newHead.y === food.y) {
+              setScore(s => s + 100);
+              setFood(generateFood(newSnake));
+            } else {
+              newSnake.pop(); 
+            }
+
+            currentDirectionRef.current = direction; 
+            return newSnake;
+          });
+        };
+
+        const gameInterval = setInterval(moveSnake, GAME_SPEED);
+        return () => clearInterval(gameInterval);
+      }, [direction, food, gameStarted, gameOver, generateFood]);
+
+      useEffect(() => {
+        if (audioRef.current) {
+          audioRef.current.muted = isMuted;
+          if (isPlaying) audioRef.current.play().catch(e => console.log("Autoplay blocked:", e));
+          else audioRef.current.pause();
+        }
+      }, [isPlaying, currentTrackIdx, isMuted]);
+
+      const togglePlay = () => setIsPlaying(!isPlaying);
+      const nextTrack = () => setCurrentTrackIdx((prev) => (prev + 1) % PLAYLIST.length);
+      const prevTrack = () => setCurrentTrackIdx((prev) => (prev - 1 + PLAYLIST.length) % PLAYLIST.length);
+      const toggleMute = () => setIsMuted(!isMuted);
+
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center p-4 font-mono relative overflow-hidden text-white selection:bg-fuchsia-500 selection:text-white">
+          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-cyan-600/20 blur-[120px] rounded-full pointer-events-none" />
+          <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-fuchsia-600/20 blur-[120px] rounded-full pointer-events-none" />
+
+          <div className="relative z-10 w-full max-w-2xl flex flex-col items-center gap-8">
+            <div className="flex justify-between items-center w-full px-4 py-3 bg-slate-900/80 border border-cyan-500/50 rounded-xl backdrop-blur-md shadow-[0_0_15px_rgba(6,182,212,0.3)]">
+              <h1 className="text-2xl font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-fuchsia-500 drop-shadow-[0_0_8px_rgba(217,70,239,0.5)]">
+                NEON.SNAKE
+              </h1>
+              <div className="text-xl text-cyan-300 font-bold drop-shadow-[0_0_5px_rgba(103,232,249,0.8)]">
+                SCORE: {score.toString().padStart(4, '0')}
+              </div>
+            </div>
+
+            <div className="relative group">
+              <div 
+                className="w-[320px] h-[320px] sm:w-[400px] sm:h-[400px] bg-slate-950 border-4 border-fuchsia-500 rounded-lg shadow-[0_0_20px_#d946ef,inset_0_0_20px_rgba(217,70,239,0.3)] flex flex-wrap relative overflow-hidden"
+                style={{ display: 'grid', gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)` }}
+              >
+                <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%] z-20 opacity-50 mix-blend-overlay"></div>
+
+                {Array.from({ length: GRID_SIZE * GRID_SIZE }).map((_, i) => {
+                  const x = i % GRID_SIZE;
+                  const y = Math.floor(i / GRID_SIZE);
+                  const isHead = snake[0].x === x && snake[0].y === y;
+                  const isBody = snake.some((s, idx) => idx !== 0 && s.x === x && s.y === y);
+                  const isFood = food.x === x && food.y === y;
+
+                  let cellClasses = "w-full h-full ";
+                  if (isHead) cellClasses += "bg-lime-400 shadow-[0_0_10px_#a3e635] z-10 rounded-sm";
+                  else if (isBody) cellClasses += "bg-lime-600 shadow-[0_0_5px_#65a30d] opacity-80 rounded-sm";
+                  else if (isFood) cellClasses += "bg-cyan-400 shadow-[0_0_15px_#22d3ee] rounded-full scale-75 animate-pulse";
+                  else cellClasses += "border-[0.5px] border-slate-800/30";
+
+                  return <div key={i} className={cellClasses} />;
+                })}
+
+                {(!gameStarted || gameOver) && (
+                  <div className="absolute inset-0 z-30 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center">
+                    {gameOver && <h2 className="text-4xl font-bold text-fuchsia-500 mb-2 drop-shadow-[0_0_10px_#d946ef]">GAME OVER</h2>}
+                    <p className="text-cyan-300 mb-6 drop-shadow-[0_0_5px_#67e8f9]">
+                      {gameOver ? `FINAL SCORE: ${score}` : 'READY TO JACK IN?'}
+                    </p>
+                    <button onClick={resetGame} className="px-6 py-3 bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-bold rounded-full transition-all shadow-[0_0_15px_#d946ef] hover:shadow-[0_0_25px_#d946ef] hover:scale-105 active:scale-95 flex items-center gap-2">
+                      <IconRefresh />
+                      {gameOver ? 'PLAY AGAIN' : 'START SYSTEM'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="w-full bg-slate-900/90 border border-fuchsia-500/50 rounded-2xl p-4 sm:p-6 backdrop-blur-md shadow-[0_0_20px_rgba(217,70,239,0.2)] flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex-1 min-w-0 text-center sm:text-left">
+                <div className="text-xs text-fuchsia-400 font-semibold tracking-widest mb-1 uppercase">Now Playing</div>
+                <div className="text-lg text-cyan-50 font-bold truncate drop-shadow-[0_0_2px_#fff]">{PLAYLIST[currentTrackIdx].title}</div>
+              </div>
+              <div className="flex items-center gap-4">
+                <button onClick={prevTrack} className="p-2 text-cyan-400 hover:text-white transition-colors hover:drop-shadow-[0_0_8px_#22d3ee]"><IconSkipBack /></button>
+                <button onClick={togglePlay} className="w-14 h-14 flex items-center justify-center bg-cyan-500 hover:bg-cyan-400 text-slate-950 rounded-full transition-all shadow-[0_0_15px_#06b6d4] hover:shadow-[0_0_25px_#22d3ee] hover:scale-105 active:scale-95">
+                  {isPlaying ? <span className="ml-1"><IconPause /></span> : <span className="ml-1"><IconPlay /></span>}
+                </button>
+                <button onClick={nextTrack} className="p-2 text-cyan-400 hover:text-white transition-colors hover:drop-shadow-[0_0_8px_#22d3ee]"><IconSkipForward /></button>
+              </div>
+              <div className="flex-1 flex justify-end">
+                <button onClick={toggleMute} className="p-2 text-slate-400 hover:text-fuchsia-400 transition-colors">
+                  {isMuted ? <IconVolumeX /> : <IconVolume2 />}
+                </button>
+              </div>
+              <audio ref={audioRef} src={PLAYLIST[currentTrackIdx].url} onEnded={nextTrack} />
+            </div>
+
+            <p className="text-slate-500 text-sm mt-4 hidden sm:block">
+              Use <span className="text-cyan-400">Arrow Keys</span> or <span className="text-cyan-400">WASD</span> to move. Space to restart.
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<NeonSnakePlayer />);
+  </script>
+</body>
+</html>
