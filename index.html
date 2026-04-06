@@ -3,11 +3,50 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Neon Snake Player</title>
+  <title>Neon Snake Player - Upgraded</title>
+  
+  <!-- Custom Digital & Cyber Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=VT323&display=swap" rel="stylesheet">
   
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   
+  <!-- Tailwind Config -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            digital: ['VT323', 'monospace'],
+            cyber: ['Orbitron', 'sans-serif'],
+          },
+          animation: {
+            'glow-pulse': 'glow-pulse 3s ease-in-out infinite alternate',
+            'score-pop': 'score-pop 0.3s ease-out',
+            'scanlines': 'scanlines 8s linear infinite',
+          },
+          keyframes: {
+            'glow-pulse': {
+              '0%': { opacity: 0.4, transform: 'scale(0.95)' },
+              '100%': { opacity: 0.8, transform: 'scale(1.05)' }
+            },
+            'score-pop': {
+              '0%': { transform: 'scale(1)', textShadow: '0 0 10px #22d3ee, 0 0 20px #22d3ee' },
+              '50%': { transform: 'scale(1.15)', textShadow: '0 0 20px #fff, 0 0 40px #22d3ee, 0 0 60px #22d3ee' },
+              '100%': { transform: 'scale(1)', textShadow: '0 0 10px #22d3ee, 0 0 20px #22d3ee, 0 0 40px #06b6d4' },
+            },
+            'scanlines': {
+              '0%': { backgroundPosition: '0 0' },
+              '100%': { backgroundPosition: '0 100%' }
+            }
+          }
+        }
+      }
+    }
+  </script>
+
   <!-- React & ReactDOM -->
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
@@ -16,7 +55,35 @@
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <style>
-    body { background-color: #020617; margin: 0; }
+    body { 
+      background-color: #02040a; 
+      margin: 0; 
+      /* Synthwave perspective grid */
+      background-image: 
+        linear-gradient(rgba(6, 182, 212, 0.15) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(6, 182, 212, 0.15) 1px, transparent 1px);
+      background-size: 40px 40px;
+      background-position: center center;
+    }
+
+    /* Ultimate Neon Text Shadows */
+    .neon-text-cyan {
+      text-shadow: 0 0 10px #22d3ee, 0 0 20px #22d3ee, 0 0 40px #06b6d4;
+    }
+    .neon-text-fuchsia {
+      text-shadow: 0 0 10px #d946ef, 0 0 20px #d946ef, 0 0 40px #c026d3;
+    }
+    
+    /* Equalizer Bars Animation */
+    @keyframes eq {
+      0% { height: 4px; }
+      50% { height: 16px; }
+      100% { height: 4px; }
+    }
+    .eq-bar { animation: eq 0.5s ease-in-out infinite alternate; }
+    .eq-bar:nth-child(2) { animation-delay: 0.1s; animation-duration: 0.4s; }
+    .eq-bar:nth-child(3) { animation-delay: 0.2s; animation-duration: 0.6s; }
+    .eq-bar:nth-child(4) { animation-delay: 0.15s; animation-duration: 0.55s; }
   </style>
 </head>
 <body>
@@ -38,19 +105,20 @@
     ];
 
     // --- Custom SVG Icons ---
-    const IconPlay = () => <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>;
-    const IconPause = () => <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>;
-    const IconSkipBack = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="19 20 9 12 19 4 19 20"></polygon><line x1="5" y1="19" x2="5" y2="5"></line></svg>;
-    const IconSkipForward = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></svg>;
-    const IconRefresh = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"></polyline><polyline points="23 20 23 14 17 14"></polyline><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path></svg>;
-    const IconVolume2 = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>;
-    const IconVolumeX = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>;
+    const IconPlay = () => <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>;
+    const IconPause = () => <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>;
+    const IconSkipBack = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"><polygon points="19 20 9 12 19 4 19 20"></polygon><line x1="5" y1="19" x2="5" y2="5" strokeWidth="3"></line></svg>;
+    const IconSkipForward = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19" strokeWidth="3"></line></svg>;
+    const IconRefresh = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"></polyline><polyline points="23 20 23 14 17 14"></polyline><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path></svg>;
+    const IconVolume2 = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>;
+    const IconVolumeX = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>;
 
     function NeonSnakePlayer() {
       const [snake, setSnake] = useState(INITIAL_SNAKE);
       const [direction, setDirection] = useState(INITIAL_DIRECTION);
       const [food, setFood] = useState({ x: 15, y: 5 });
       const [score, setScore] = useState(0);
+      const [scorePop, setScorePop] = useState(false);
       const [gameOver, setGameOver] = useState(false);
       const [gameStarted, setGameStarted] = useState(false);
       const currentDirectionRef = useRef(INITIAL_DIRECTION);
@@ -59,6 +127,15 @@
       const [isPlaying, setIsPlaying] = useState(false);
       const [isMuted, setIsMuted] = useState(false);
       const audioRef = useRef(null);
+
+      // Trigger score animation when score changes
+      useEffect(() => {
+        if (score > 0) {
+          setScorePop(true);
+          const timer = setTimeout(() => setScorePop(false), 300);
+          return () => clearTimeout(timer);
+        }
+      }, [score]);
 
       const generateFood = useCallback((currentSnake) => {
         let newFood;
@@ -160,27 +237,46 @@
       const toggleMute = () => setIsMuted(!isMuted);
 
       return (
-        <div className="min-h-screen flex flex-col items-center justify-center p-4 font-mono relative overflow-hidden text-white selection:bg-fuchsia-500 selection:text-white">
-          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-cyan-600/20 blur-[120px] rounded-full pointer-events-none" />
-          <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-fuchsia-600/20 blur-[120px] rounded-full pointer-events-none" />
+        <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden text-white selection:bg-fuchsia-500 selection:text-white font-cyber">
+          
+          {/* Animated Ambient Background Glows */}
+          <div className="fixed top-0 left-0 w-[500px] h-[500px] bg-cyan-600/30 blur-[150px] rounded-full pointer-events-none animate-glow-pulse" />
+          <div className="fixed bottom-0 right-0 w-[500px] h-[500px] bg-fuchsia-600/30 blur-[150px] rounded-full pointer-events-none animate-glow-pulse" style={{ animationDelay: '1s' }}/>
 
-          <div className="relative z-10 w-full max-w-2xl flex flex-col items-center gap-8">
-            <div className="flex justify-between items-center w-full px-4 py-3 bg-slate-900/80 border border-cyan-500/50 rounded-xl backdrop-blur-md shadow-[0_0_15px_rgba(6,182,212,0.3)]">
-              <h1 className="text-2xl font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-fuchsia-500 drop-shadow-[0_0_8px_rgba(217,70,239,0.5)]">
-                NEON.SNAKE
-              </h1>
-              <div className="text-xl text-cyan-300 font-bold drop-shadow-[0_0_5px_rgba(103,232,249,0.8)]">
-                SCORE: {score.toString().padStart(4, '0')}
+          <div className="relative z-10 w-full max-w-3xl flex flex-col items-center gap-6">
+            
+            {/* Header Area */}
+            <div className="flex flex-col sm:flex-row justify-between items-center w-full gap-6">
+              {/* Title */}
+              <div className="text-center sm:text-left">
+                <h1 className="text-4xl sm:text-5xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-br from-cyan-300 via-fuchsia-400 to-fuchsia-600 neon-text-fuchsia">
+                  NEON.SNAKE
+                </h1>
+                <p className="text-cyan-400/80 tracking-[0.3em] text-xs mt-2 uppercase font-bold">Arcade System OS v2.0</p>
+              </div>
+
+              {/* Massive Digital Scoreboard */}
+              <div className="bg-slate-950 p-4 rounded-xl border border-cyan-500/30 shadow-[0_0_20px_rgba(6,182,212,0.2),inset_0_0_20px_rgba(0,0,0,1)] relative flex flex-col items-end min-w-[200px]">
+                <div className="absolute top-2 left-3 text-[10px] text-cyan-500/80 uppercase tracking-widest font-bold">Current Score</div>
+                <div 
+                  className={`font-digital text-7xl leading-none text-cyan-300 mt-3 transition-all duration-75 neon-text-cyan
+                    ${scorePop ? 'animate-score-pop text-white' : ''}`}
+                >
+                  {score.toString().padStart(5, '0')}
+                </div>
               </div>
             </div>
 
-            <div className="relative group">
+            {/* Game Board container with massive neon shadows */}
+            <div className="relative group p-1 rounded-xl bg-gradient-to-b from-fuchsia-500 to-cyan-500 shadow-[0_0_40px_rgba(217,70,239,0.5)]">
               <div 
-                className="w-[320px] h-[320px] sm:w-[400px] sm:h-[400px] bg-slate-950 border-4 border-fuchsia-500 rounded-lg shadow-[0_0_20px_#d946ef,inset_0_0_20px_rgba(217,70,239,0.3)] flex flex-wrap relative overflow-hidden"
+                className="w-[320px] h-[320px] sm:w-[500px] sm:h-[500px] bg-[#02040a] rounded-lg shadow-[inset_0_0_50px_rgba(0,0,0,0.8)] flex flex-wrap relative overflow-hidden border-2 border-[#02040a]"
                 style={{ display: 'grid', gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)` }}
               >
-                <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%] z-20 opacity-50 mix-blend-overlay"></div>
+                {/* Scrolling Scanlines overlay */}
+                <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(transparent_50%,rgba(0,0,0,0.4)_50%)] bg-[length:100%_4px] z-20 opacity-70 animate-scanlines mix-blend-overlay"></div>
 
+                {/* Render Grid & Snake */}
                 {Array.from({ length: GRID_SIZE * GRID_SIZE }).map((_, i) => {
                   const x = i % GRID_SIZE;
                   const y = Math.floor(i / GRID_SIZE);
@@ -189,52 +285,110 @@
                   const isFood = food.x === x && food.y === y;
 
                   let cellClasses = "w-full h-full ";
-                  if (isHead) cellClasses += "bg-lime-400 shadow-[0_0_10px_#a3e635] z-10 rounded-sm";
-                  else if (isBody) cellClasses += "bg-lime-600 shadow-[0_0_5px_#65a30d] opacity-80 rounded-sm";
-                  else if (isFood) cellClasses += "bg-cyan-400 shadow-[0_0_15px_#22d3ee] rounded-full scale-75 animate-pulse";
-                  else cellClasses += "border-[0.5px] border-slate-800/30";
+                  
+                  if (isHead) {
+                    cellClasses += "bg-white shadow-[0_0_15px_#fff,0_0_30px_#22c55e] z-10 rounded-sm scale-110";
+                  } else if (isBody) {
+                    cellClasses += "bg-green-400 shadow-[0_0_10px_#22c55e] opacity-90 rounded-sm scale-95";
+                  } else if (isFood) {
+                    // Glowing orb for food
+                    cellClasses += "bg-white shadow-[0_0_10px_#fff,0_0_20px_#f0abfc,0_0_40px_#d946ef] rounded-full scale-[0.6] animate-pulse";
+                  } else {
+                    cellClasses += "border-[0.5px] border-cyan-900/10";
+                  }
 
                   return <div key={i} className={cellClasses} />;
                 })}
 
+                {/* Start / Game Over Screens */}
                 {(!gameStarted || gameOver) && (
-                  <div className="absolute inset-0 z-30 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center">
-                    {gameOver && <h2 className="text-4xl font-bold text-fuchsia-500 mb-2 drop-shadow-[0_0_10px_#d946ef]">GAME OVER</h2>}
-                    <p className="text-cyan-300 mb-6 drop-shadow-[0_0_5px_#67e8f9]">
-                      {gameOver ? `FINAL SCORE: ${score}` : 'READY TO JACK IN?'}
+                  <div className="absolute inset-0 z-30 bg-slate-950/80 backdrop-blur-[4px] flex flex-col items-center justify-center p-6 text-center border-[4px] border-transparent">
+                    {gameOver && (
+                      <h2 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-fuchsia-500 mb-2 neon-text-fuchsia tracking-widest uppercase">
+                        System Failure
+                      </h2>
+                    )}
+                    <p className="text-cyan-300 mb-8 font-digital text-3xl neon-text-cyan">
+                      {gameOver ? `FINAL SCORE: ${score.toString().padStart(5, '0')}` : 'INSERT COIN TO START'}
                     </p>
-                    <button onClick={resetGame} className="px-6 py-3 bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-bold rounded-full transition-all shadow-[0_0_15px_#d946ef] hover:shadow-[0_0_25px_#d946ef] hover:scale-105 active:scale-95 flex items-center gap-2">
+                    <button 
+                      onClick={resetGame} 
+                      className="group relative px-8 py-4 bg-transparent text-white font-bold tracking-widest rounded-none overflow-hidden transition-all hover:scale-105 active:scale-95 flex items-center gap-3 border-2 border-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.5),inset_0_0_15px_rgba(6,182,212,0.3)] hover:shadow-[0_0_30px_rgba(6,182,212,0.8),inset_0_0_20px_rgba(6,182,212,0.6)]"
+                    >
+                      <div className="absolute inset-0 bg-cyan-400/20 translate-y-[100%] group-hover:translate-y-0 transition-transform duration-300"></div>
                       <IconRefresh />
-                      {gameOver ? 'PLAY AGAIN' : 'START SYSTEM'}
+                      <span className="relative z-10">{gameOver ? 'REBOOT SYSTEM' : 'INITIALIZE'}</span>
                     </button>
                   </div>
                 )}
               </div>
             </div>
 
-            <div className="w-full bg-slate-900/90 border border-fuchsia-500/50 rounded-2xl p-4 sm:p-6 backdrop-blur-md shadow-[0_0_20px_rgba(217,70,239,0.2)] flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="flex-1 min-w-0 text-center sm:text-left">
-                <div className="text-xs text-fuchsia-400 font-semibold tracking-widest mb-1 uppercase">Now Playing</div>
-                <div className="text-lg text-cyan-50 font-bold truncate drop-shadow-[0_0_2px_#fff]">{PLAYLIST[currentTrackIdx].title}</div>
+            {/* Futuristic Music Player */}
+            <div className="w-full bg-slate-950/80 border border-fuchsia-500/40 rounded-xl p-5 backdrop-blur-xl shadow-[0_0_30px_rgba(217,70,239,0.15)] flex flex-col sm:flex-row items-center gap-6 mt-2 relative overflow-hidden">
+              
+              {/* Decorative side accent */}
+              <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-cyan-400 to-fuchsia-500 shadow-[0_0_10px_#d946ef]"></div>
+
+              {/* Track Info & Equalizer */}
+              <div className="flex-1 min-w-0 flex items-center gap-4 w-full justify-center sm:justify-start">
+                <div className="w-12 h-12 rounded-full bg-slate-900 border border-cyan-500/50 flex items-end justify-center pb-3 gap-1 shadow-[inset_0_0_10px_rgba(6,182,212,0.3)] overflow-hidden shrink-0">
+                  {isPlaying ? (
+                    <>
+                      <div className="w-1.5 bg-cyan-400 rounded-t-sm eq-bar shadow-[0_0_5px_#22d3ee]"></div>
+                      <div className="w-1.5 bg-cyan-400 rounded-t-sm eq-bar shadow-[0_0_5px_#22d3ee]"></div>
+                      <div className="w-1.5 bg-cyan-400 rounded-t-sm eq-bar shadow-[0_0_5px_#22d3ee]"></div>
+                      <div className="w-1.5 bg-cyan-400 rounded-t-sm eq-bar shadow-[0_0_5px_#22d3ee]"></div>
+                    </>
+                  ) : (
+                    <div className="w-6 h-1 bg-cyan-800 rounded-full mb-1"></div>
+                  )}
+                </div>
+                <div className="text-center sm:text-left overflow-hidden">
+                  <div className="text-[10px] text-fuchsia-400 font-black tracking-[0.2em] mb-1 uppercase">Audio Track</div>
+                  <div className="text-lg text-white font-bold truncate drop-shadow-[0_0_5px_#fff]">
+                    {PLAYLIST[currentTrackIdx].title}
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center gap-4">
-                <button onClick={prevTrack} className="p-2 text-cyan-400 hover:text-white transition-colors hover:drop-shadow-[0_0_8px_#22d3ee]"><IconSkipBack /></button>
-                <button onClick={togglePlay} className="w-14 h-14 flex items-center justify-center bg-cyan-500 hover:bg-cyan-400 text-slate-950 rounded-full transition-all shadow-[0_0_15px_#06b6d4] hover:shadow-[0_0_25px_#22d3ee] hover:scale-105 active:scale-95">
-                  {isPlaying ? <span className="ml-1"><IconPause /></span> : <span className="ml-1"><IconPlay /></span>}
+
+              {/* Media Controls */}
+              <div className="flex items-center gap-5">
+                <button onClick={prevTrack} className="p-2 text-cyan-600 hover:text-cyan-300 transition-colors hover:scale-110 active:scale-95">
+                  <IconSkipBack />
                 </button>
-                <button onClick={nextTrack} className="p-2 text-cyan-400 hover:text-white transition-colors hover:drop-shadow-[0_0_8px_#22d3ee]"><IconSkipForward /></button>
+                
+                <button 
+                  onClick={togglePlay} 
+                  className="w-16 h-16 flex items-center justify-center bg-transparent border-2 border-fuchsia-500 text-fuchsia-400 hover:bg-fuchsia-500 hover:text-white rounded-full transition-all shadow-[0_0_15px_rgba(217,70,239,0.4),inset_0_0_15px_rgba(217,70,239,0.4)] hover:shadow-[0_0_30px_#d946ef] hover:scale-105 active:scale-95"
+                >
+                  {isPlaying ? <IconPause /> : <span className="ml-1"><IconPlay /></span>}
+                </button>
+                
+                <button onClick={nextTrack} className="p-2 text-cyan-600 hover:text-cyan-300 transition-colors hover:scale-110 active:scale-95">
+                  <IconSkipForward />
+                </button>
               </div>
-              <div className="flex-1 flex justify-end">
-                <button onClick={toggleMute} className="p-2 text-slate-400 hover:text-fuchsia-400 transition-colors">
+
+              {/* Volume Control */}
+              <div className="flex-1 flex justify-end hidden sm:flex">
+                <button onClick={toggleMute} className="p-3 text-slate-500 hover:text-cyan-400 transition-all hover:scale-110">
                   {isMuted ? <IconVolumeX /> : <IconVolume2 />}
                 </button>
               </div>
+
               <audio ref={audioRef} src={PLAYLIST[currentTrackIdx].url} onEnded={nextTrack} />
             </div>
 
-            <p className="text-slate-500 text-sm mt-4 hidden sm:block">
-              Use <span className="text-cyan-400">Arrow Keys</span> or <span className="text-cyan-400">WASD</span> to move. Space to restart.
-            </p>
+            {/* Footer / Instructions */}
+            <div className="text-center w-full mt-2 hidden sm:block">
+              <p className="text-slate-500 text-xs tracking-widest uppercase font-bold">
+                Movement: <span className="text-cyan-400 bg-cyan-950/50 px-2 py-1 rounded border border-cyan-900/50">Arrows</span> / <span className="text-cyan-400 bg-cyan-950/50 px-2 py-1 rounded border border-cyan-900/50">WASD</span>
+                <span className="mx-4 text-slate-700">|</span>
+                Restart: <span className="text-fuchsia-400 bg-fuchsia-950/50 px-3 py-1 rounded border border-fuchsia-900/50">SPACE</span>
+              </p>
+            </div>
+
           </div>
         </div>
       );
