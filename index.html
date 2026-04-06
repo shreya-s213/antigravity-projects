@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Neon Snake Player - Upgraded</title>
+  <title>SYS.SNAKE_PROTOCOL // GLITCH_ART</title>
   
-  <!-- Custom Digital & Cyber Fonts -->
+  <!-- Raw & Pixelated Web Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=VT323&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap" rel="stylesheet">
   
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -19,27 +19,36 @@
       theme: {
         extend: {
           fontFamily: {
-            digital: ['VT323', 'monospace'],
-            cyber: ['Orbitron', 'sans-serif'],
+            pixel: ['VT323', 'monospace'],
+            terminal: ['"Share Tech Mono"', 'monospace'],
+          },
+          colors: {
+            cyan: { glitch: '#00FFFF' },
+            magenta: { glitch: '#FF00FF' },
+            black: { raw: '#050505' },
+          },
+          boxShadow: {
+            'offset-cyan': '4px 4px 0px #00FFFF',
+            'offset-magenta': '-4px 4px 0px #FF00FF',
+            'offset-black': '4px 4px 0px #050505',
           },
           animation: {
-            'glow-pulse': 'glow-pulse 3s ease-in-out infinite alternate',
-            'score-pop': 'score-pop 0.3s ease-out',
-            'scanlines': 'scanlines 8s linear infinite',
+            'flicker': 'flicker 0.15s infinite',
+            'static-noise': 'noise 0.2s infinite',
+            'score-glitch': 'score-glitch 0.3s steps(2, end)',
           },
           keyframes: {
-            'glow-pulse': {
-              '0%': { opacity: 0.4, transform: 'scale(0.95)' },
-              '100%': { opacity: 0.8, transform: 'scale(1.05)' }
+            flicker: {
+              '0%, 100%': { opacity: 1 },
+              '50%': { opacity: 0.8 },
+              '25%, 75%': { opacity: 0.2 },
             },
-            'score-pop': {
-              '0%': { transform: 'scale(1)', textShadow: '0 0 10px #22d3ee, 0 0 20px #22d3ee' },
-              '50%': { transform: 'scale(1.15)', textShadow: '0 0 20px #fff, 0 0 40px #22d3ee, 0 0 60px #22d3ee' },
-              '100%': { transform: 'scale(1)', textShadow: '0 0 10px #22d3ee, 0 0 20px #22d3ee, 0 0 40px #06b6d4' },
-            },
-            'scanlines': {
-              '0%': { backgroundPosition: '0 0' },
-              '100%': { backgroundPosition: '0 100%' }
+            'score-glitch': {
+              '0%': { transform: 'translate(0)', color: '#00FFFF' },
+              '25%': { transform: 'translate(-4px, 2px)', color: '#FF00FF' },
+              '50%': { transform: 'translate(4px, -2px)', color: '#FFF' },
+              '75%': { transform: 'translate(-2px, -4px)', color: '#FF00FF' },
+              '100%': { transform: 'translate(0)', color: '#00FFFF' },
             }
           }
         }
@@ -50,68 +59,122 @@
   <!-- React & ReactDOM -->
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-  
   <!-- Babel for JSX -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <style>
+    /* CSS Screen Tearing & Glitch Effects */
     body { 
-      background-color: #02040a; 
+      background-color: #050505; 
       margin: 0; 
-      /* Synthwave perspective grid */
-      background-image: 
-        linear-gradient(rgba(6, 182, 212, 0.15) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(6, 182, 212, 0.15) 1px, transparent 1px);
-      background-size: 40px 40px;
-      background-position: center center;
+      color: #fff;
     }
 
-    /* Ultimate Neon Text Shadows */
-    .neon-text-cyan {
-      text-shadow: 0 0 10px #22d3ee, 0 0 20px #22d3ee, 0 0 40px #06b6d4;
+    /* Base64 Noise overlay for static TV effect */
+    .bg-static {
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.15'/%3E%3C/svg%3E");
     }
-    .neon-text-fuchsia {
-      text-shadow: 0 0 10px #d946ef, 0 0 20px #d946ef, 0 0 40px #c026d3;
+
+    /* CRT Scanlines */
+    .scanlines {
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.4) 50%);
+      background-size: 100% 4px;
+      pointer-events: none;
+    }
+
+    /* Chromatic Aberration Text */
+    .text-glitch {
+      position: relative;
+      color: white;
     }
     
-    /* Equalizer Bars Animation */
-    @keyframes eq {
-      0% { height: 4px; }
-      50% { height: 16px; }
-      100% { height: 4px; }
+    .text-glitch::before,
+    .text-glitch::after {
+      content: attr(data-text);
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #050505;
     }
-    .eq-bar { animation: eq 0.5s ease-in-out infinite alternate; }
-    .eq-bar:nth-child(2) { animation-delay: 0.1s; animation-duration: 0.4s; }
-    .eq-bar:nth-child(3) { animation-delay: 0.2s; animation-duration: 0.6s; }
-    .eq-bar:nth-child(4) { animation-delay: 0.15s; animation-duration: 0.55s; }
+
+    .text-glitch::before {
+      left: 3px;
+      text-shadow: -2px 0 #FF00FF;
+      clip-path: inset(10% 0 60% 0);
+      animation: tear-anim 3s infinite linear alternate-reverse;
+    }
+
+    .text-glitch::after {
+      left: -3px;
+      text-shadow: -2px 0 #00FFFF;
+      clip-path: inset(80% 0 10% 0);
+      animation: tear-anim-2 2s infinite linear alternate-reverse;
+    }
+
+    @keyframes tear-anim {
+      0% { clip-path: inset(20% 0 80% 0); transform: translate(-2px, 1px); }
+      20% { clip-path: inset(60% 0 10% 0); transform: translate(2px, -1px); }
+      40% { clip-path: inset(40% 0 50% 0); transform: translate(-2px, 2px); }
+      60% { clip-path: inset(80% 0 5% 0); transform: translate(3px, -2px); }
+      80% { clip-path: inset(10% 0 70% 0); transform: translate(-3px, 1px); }
+      100% { clip-path: inset(30% 0 50% 0); transform: translate(2px, -1px); }
+    }
+
+    @keyframes tear-anim-2 {
+      0% { clip-path: inset(10% 0 60% 0); transform: translate(2px, -1px); }
+      20% { clip-path: inset(30% 0 20% 0); transform: translate(-2px, 1px); }
+      40% { clip-path: inset(70% 0 10% 0); transform: translate(2px, 2px); }
+      60% { clip-path: inset(20% 0 50% 0); transform: translate(-3px, -1px); }
+      80% { clip-path: inset(50% 0 30% 0); transform: translate(3px, 1px); }
+      100% { clip-path: inset(5% 0 80% 0); transform: translate(-2px, -2px); }
+    }
+
+    /* Terminal UI Elements */
+    .border-terminal { border: 2px solid #333; }
+    
+    /* Digital Equalizer Bar Glitch */
+    @keyframes eq-glitch {
+      0% { height: 10%; background-color: #00FFFF; }
+      25% { height: 90%; background-color: #00FFFF; }
+      50% { height: 40%; background-color: #FF00FF; }
+      75% { height: 100%; background-color: #fff; }
+      100% { height: 20%; background-color: #00FFFF; }
+    }
+    .eq-bar { animation: eq-glitch 0.2s steps(2, end) infinite; }
+    .eq-bar:nth-child(2) { animation-duration: 0.3s; animation-direction: reverse; }
+    .eq-bar:nth-child(3) { animation-duration: 0.15s; }
+    .eq-bar:nth-child(4) { animation-duration: 0.4s; animation-direction: reverse; }
+
+    /* Custom Selection Colors */
+    ::selection { background: #FF00FF; color: #000; }
   </style>
 </head>
-<body>
+<body class="bg-static">
   <div id="root"></div>
 
   <script type="text/babel">
     const { useState, useEffect, useRef, useCallback } = React;
 
-    // --- Constants & Config ---
     const GRID_SIZE = 20;
     const INITIAL_SNAKE = [{ x: 10, y: 10 }];
     const INITIAL_DIRECTION = { x: 0, y: -1 }; 
-    const GAME_SPEED = 120; 
+    const GAME_SPEED = 100; // Slightly faster, more erratic feel
 
     const PLAYLIST = [
-      { id: 1, title: "Neon Grid Algorithm", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" },
-      { id: 2, title: "Cybernetic Pulse", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" },
-      { id: 3, title: "Synthwave Matrix", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3" }
+      { id: 1, title: "DATA_CORRUPTION_A", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" },
+      { id: 2, title: "NULL_POINTER_EXC", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" },
+      { id: 3, title: "MEM_LEAK_WARNING", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3" }
     ];
 
-    // --- Custom SVG Icons ---
-    const IconPlay = () => <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>;
-    const IconPause = () => <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>;
-    const IconSkipBack = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"><polygon points="19 20 9 12 19 4 19 20"></polygon><line x1="5" y1="19" x2="5" y2="5" strokeWidth="3"></line></svg>;
-    const IconSkipForward = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19" strokeWidth="3"></line></svg>;
-    const IconRefresh = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"></polyline><polyline points="23 20 23 14 17 14"></polyline><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path></svg>;
-    const IconVolume2 = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>;
-    const IconVolumeX = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>;
+    // SVG Icons - Redesigned with sharp square linecaps/joins for a harsher feel
+    const IconPlay = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>;
+    const IconPause = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>;
+    const IconSkipBack = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter"><polygon points="19 20 9 12 19 4 19 20"></polygon><line x1="5" y1="19" x2="5" y2="5"></line></svg>;
+    const IconSkipForward = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></svg>;
+    const IconVolume2 = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>;
+    const IconVolumeX = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>;
 
     function NeonSnakePlayer() {
       const [snake, setSnake] = useState(INITIAL_SNAKE);
@@ -128,7 +191,7 @@
       const [isMuted, setIsMuted] = useState(false);
       const audioRef = useRef(null);
 
-      // Trigger score animation when score changes
+      // Score Glitch Trigger
       useEffect(() => {
         if (score > 0) {
           setScorePop(true);
@@ -208,7 +271,8 @@
 
             const newSnake = [newHead, ...prevSnake];
             if (newHead.x === food.x && newHead.y === food.y) {
-              setScore(s => s + 100);
+              // Raw byte score logic
+              setScore(s => s + 256);
               setFood(generateFood(newSnake));
             } else {
               newSnake.pop(); 
@@ -237,45 +301,48 @@
       const toggleMute = () => setIsMuted(!isMuted);
 
       return (
-        <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden text-white selection:bg-fuchsia-500 selection:text-white font-cyber">
+        <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden font-terminal">
           
-          {/* Animated Ambient Background Glows */}
-          <div className="fixed top-0 left-0 w-[500px] h-[500px] bg-cyan-600/30 blur-[150px] rounded-full pointer-events-none animate-glow-pulse" />
-          <div className="fixed bottom-0 right-0 w-[500px] h-[500px] bg-fuchsia-600/30 blur-[150px] rounded-full pointer-events-none animate-glow-pulse" style={{ animationDelay: '1s' }}/>
+          {/* Constant Fullscreen CRT Filter overlay */}
+          <div className="fixed inset-0 scanlines z-50 pointer-events-none"></div>
 
-          <div className="relative z-10 w-full max-w-3xl flex flex-col items-center gap-6">
+          <div className="relative z-10 w-full max-w-4xl flex flex-col items-center gap-8">
             
             {/* Header Area */}
-            <div className="flex flex-col sm:flex-row justify-between items-center w-full gap-6">
-              {/* Title */}
-              <div className="text-center sm:text-left">
-                <h1 className="text-4xl sm:text-5xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-br from-cyan-300 via-fuchsia-400 to-fuchsia-600 neon-text-fuchsia">
-                  NEON.SNAKE
+            <div className="flex flex-col sm:flex-row justify-between items-start w-full gap-6">
+              
+              {/* Title - Cryptic & Torn */}
+              <div className="text-left w-full sm:w-auto">
+                <h1 className="text-4xl sm:text-6xl font-pixel text-glitch tracking-widest font-bold uppercase m-0 leading-none" data-text="SYS.SNAKE_PROTOCOL">
+                  SYS.SNAKE_PROTOCOL
                 </h1>
-                <p className="text-cyan-400/80 tracking-[0.3em] text-xs mt-2 uppercase font-bold">Arcade System OS v2.0</p>
+                <p className="text-magenta-glitch bg-black-raw inline-block px-1 mt-2 text-xs uppercase tracking-[0.4em] font-bold border-l-4 border-cyan-glitch">
+                  [KERNEL_PANIC // SUBROUTINE_0X4]
+                </p>
               </div>
 
-              {/* Massive Digital Scoreboard */}
-              <div className="bg-slate-950 p-4 rounded-xl border border-cyan-500/30 shadow-[0_0_20px_rgba(6,182,212,0.2),inset_0_0_20px_rgba(0,0,0,1)] relative flex flex-col items-end min-w-[200px]">
-                <div className="absolute top-2 left-3 text-[10px] text-cyan-500/80 uppercase tracking-widest font-bold">Current Score</div>
+              {/* Data Readout / Scoreboard */}
+              <div className="bg-black-raw p-3 border-2 border-cyan-glitch shadow-offset-magenta relative flex flex-col items-end min-w-[200px] shrink-0">
+                <div className="text-xs text-white uppercase tracking-widest font-bold mb-1 w-full text-left border-b border-zinc-800 pb-1 flex justify-between">
+                  <span>[BYTE_COUNT]</span>
+                  <span className="text-magenta-glitch animate-flicker">REC</span>
+                </div>
                 <div 
-                  className={`font-digital text-7xl leading-none text-cyan-300 mt-3 transition-all duration-75 neon-text-cyan
-                    ${scorePop ? 'animate-score-pop text-white' : ''}`}
+                  className={`font-pixel text-5xl leading-none text-cyan-glitch mt-2 tracking-widest uppercase
+                    ${scorePop ? 'animate-score-glitch text-white' : ''}`}
                 >
-                  {score.toString().padStart(5, '0')}
+                  0x{score.toString(16).padStart(4, '0')}
                 </div>
               </div>
             </div>
 
-            {/* Game Board container with massive neon shadows */}
-            <div className="relative group p-1 rounded-xl bg-gradient-to-b from-fuchsia-500 to-cyan-500 shadow-[0_0_40px_rgba(217,70,239,0.5)]">
+            {/* Main Board Container */}
+            <div className="relative group p-2 bg-black-raw border-4 border-zinc-800 shadow-offset-cyan">
+              
               <div 
-                className="w-[320px] h-[320px] sm:w-[500px] sm:h-[500px] bg-[#02040a] rounded-lg shadow-[inset_0_0_50px_rgba(0,0,0,0.8)] flex flex-wrap relative overflow-hidden border-2 border-[#02040a]"
+                className="w-[320px] h-[320px] sm:w-[500px] sm:h-[500px] bg-black-raw relative overflow-hidden"
                 style={{ display: 'grid', gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)` }}
               >
-                {/* Scrolling Scanlines overlay */}
-                <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(transparent_50%,rgba(0,0,0,0.4)_50%)] bg-[length:100%_4px] z-20 opacity-70 animate-scanlines mix-blend-overlay"></div>
-
                 {/* Render Grid & Snake */}
                 {Array.from({ length: GRID_SIZE * GRID_SIZE }).map((_, i) => {
                   const x = i % GRID_SIZE;
@@ -287,92 +354,93 @@
                   let cellClasses = "w-full h-full ";
                   
                   if (isHead) {
-                    cellClasses += "bg-white shadow-[0_0_15px_#fff,0_0_30px_#22c55e] z-10 rounded-sm scale-110";
+                    cellClasses += "bg-white z-10 animate-flicker shadow-[0_0_0_2px_#00FFFF] scale-[1.15]";
                   } else if (isBody) {
-                    cellClasses += "bg-green-400 shadow-[0_0_10px_#22c55e] opacity-90 rounded-sm scale-95";
+                    cellClasses += "bg-cyan-glitch scale-[0.85]";
                   } else if (isFood) {
-                    // Glowing orb for food
-                    cellClasses += "bg-white shadow-[0_0_10px_#fff,0_0_20px_#f0abfc,0_0_40px_#d946ef] rounded-full scale-[0.6] animate-pulse";
+                    cellClasses += "bg-magenta-glitch scale-[0.7] animate-[flicker_0.05s_infinite]";
                   } else {
-                    cellClasses += "border-[0.5px] border-cyan-900/10";
+                    cellClasses += "border border-[#111]";
                   }
 
                   return <div key={i} className={cellClasses} />;
                 })}
 
-                {/* Start / Game Over Screens */}
+                {/* Overlays / Screens */}
                 {(!gameStarted || gameOver) && (
-                  <div className="absolute inset-0 z-30 bg-slate-950/80 backdrop-blur-[4px] flex flex-col items-center justify-center p-6 text-center border-[4px] border-transparent">
+                  <div className="absolute inset-0 z-30 bg-black-raw/90 flex flex-col items-center justify-center p-6 text-center border-4 border-magenta-glitch m-4">
                     {gameOver && (
-                      <h2 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-fuchsia-500 mb-2 neon-text-fuchsia tracking-widest uppercase">
-                        System Failure
+                      <h2 className="text-5xl font-pixel text-glitch text-white mb-2 uppercase" data-text="CRITICAL_ERR_0x00F">
+                        CRITICAL_ERR_0x00F
                       </h2>
                     )}
-                    <p className="text-cyan-300 mb-8 font-digital text-3xl neon-text-cyan">
-                      {gameOver ? `FINAL SCORE: ${score.toString().padStart(5, '0')}` : 'INSERT COIN TO START'}
+                    
+                    <p className="text-cyan-glitch mb-8 font-pixel text-3xl uppercase tracking-widest">
+                      {gameOver ? `FINAL_DUMP: 0x${score.toString(16).padStart(4, '0')}` : 'AWAITING_EXECUTION_'}
+                      <span className="animate-flicker text-white inline-block w-4 h-6 bg-white ml-2 align-middle"></span>
                     </p>
+                    
                     <button 
                       onClick={resetGame} 
-                      className="group relative px-8 py-4 bg-transparent text-white font-bold tracking-widest rounded-none overflow-hidden transition-all hover:scale-105 active:scale-95 flex items-center gap-3 border-2 border-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.5),inset_0_0_15px_rgba(6,182,212,0.3)] hover:shadow-[0_0_30px_rgba(6,182,212,0.8),inset_0_0_20px_rgba(6,182,212,0.6)]"
+                      className="px-6 py-3 bg-transparent text-white font-bold tracking-widest border-2 border-cyan-glitch uppercase hover:bg-cyan-glitch hover:text-black-raw transition-none hover:shadow-offset-magenta focus:outline-none focus:ring-0 active:scale-95"
                     >
-                      <div className="absolute inset-0 bg-cyan-400/20 translate-y-[100%] group-hover:translate-y-0 transition-transform duration-300"></div>
-                      <IconRefresh />
-                      <span className="relative z-10">{gameOver ? 'REBOOT SYSTEM' : 'INITIALIZE'}</span>
+                      {gameOver ? '> FORCE_REBOOT()' : '> INIT_SEQUENCE()'}
                     </button>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Futuristic Music Player */}
-            <div className="w-full bg-slate-950/80 border border-fuchsia-500/40 rounded-xl p-5 backdrop-blur-xl shadow-[0_0_30px_rgba(217,70,239,0.15)] flex flex-col sm:flex-row items-center gap-6 mt-2 relative overflow-hidden">
+            {/* Futuristic Terminal Music Player */}
+            <div className="w-full bg-black-raw border-2 border-zinc-800 p-4 shadow-offset-magenta flex flex-col sm:flex-row items-center gap-6 relative">
               
-              {/* Decorative side accent */}
-              <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-cyan-400 to-fuchsia-500 shadow-[0_0_10px_#d946ef]"></div>
-
-              {/* Track Info & Equalizer */}
-              <div className="flex-1 min-w-0 flex items-center gap-4 w-full justify-center sm:justify-start">
-                <div className="w-12 h-12 rounded-full bg-slate-900 border border-cyan-500/50 flex items-end justify-center pb-3 gap-1 shadow-[inset_0_0_10px_rgba(6,182,212,0.3)] overflow-hidden shrink-0">
-                  {isPlaying ? (
-                    <>
-                      <div className="w-1.5 bg-cyan-400 rounded-t-sm eq-bar shadow-[0_0_5px_#22d3ee]"></div>
-                      <div className="w-1.5 bg-cyan-400 rounded-t-sm eq-bar shadow-[0_0_5px_#22d3ee]"></div>
-                      <div className="w-1.5 bg-cyan-400 rounded-t-sm eq-bar shadow-[0_0_5px_#22d3ee]"></div>
-                      <div className="w-1.5 bg-cyan-400 rounded-t-sm eq-bar shadow-[0_0_5px_#22d3ee]"></div>
-                    </>
-                  ) : (
-                    <div className="w-6 h-1 bg-cyan-800 rounded-full mb-1"></div>
-                  )}
-                </div>
-                <div className="text-center sm:text-left overflow-hidden">
-                  <div className="text-[10px] text-fuchsia-400 font-black tracking-[0.2em] mb-1 uppercase">Audio Track</div>
-                  <div className="text-lg text-white font-bold truncate drop-shadow-[0_0_5px_#fff]">
-                    {PLAYLIST[currentTrackIdx].title}
-                  </div>
-                </div>
-              </div>
-
               {/* Media Controls */}
-              <div className="flex items-center gap-5">
-                <button onClick={prevTrack} className="p-2 text-cyan-600 hover:text-cyan-300 transition-colors hover:scale-110 active:scale-95">
+              <div className="flex items-center gap-2 border-r border-zinc-800 pr-6">
+                <button onClick={prevTrack} className="p-2 border border-zinc-700 text-zinc-500 hover:text-cyan-glitch hover:border-cyan-glitch active:bg-cyan-glitch active:text-black-raw transition-none">
                   <IconSkipBack />
                 </button>
                 
                 <button 
                   onClick={togglePlay} 
-                  className="w-16 h-16 flex items-center justify-center bg-transparent border-2 border-fuchsia-500 text-fuchsia-400 hover:bg-fuchsia-500 hover:text-white rounded-full transition-all shadow-[0_0_15px_rgba(217,70,239,0.4),inset_0_0_15px_rgba(217,70,239,0.4)] hover:shadow-[0_0_30px_#d946ef] hover:scale-105 active:scale-95"
+                  className="w-12 h-12 flex items-center justify-center bg-transparent border-2 border-magenta-glitch text-magenta-glitch hover:bg-magenta-glitch hover:text-black-raw transition-none shadow-[2px_2px_0_#00FFFF] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
                 >
                   {isPlaying ? <IconPause /> : <span className="ml-1"><IconPlay /></span>}
                 </button>
                 
-                <button onClick={nextTrack} className="p-2 text-cyan-600 hover:text-cyan-300 transition-colors hover:scale-110 active:scale-95">
+                <button onClick={nextTrack} className="p-2 border border-zinc-700 text-zinc-500 hover:text-cyan-glitch hover:border-cyan-glitch active:bg-cyan-glitch active:text-black-raw transition-none">
                   <IconSkipForward />
                 </button>
               </div>
 
+              {/* Data & Equalizer Readout */}
+              <div className="flex-1 w-full flex items-center gap-4">
+                <div className="w-12 h-10 bg-black border border-zinc-700 flex items-end justify-center pb-1 gap-1 overflow-hidden shrink-0">
+                  {isPlaying ? (
+                    <>
+                      <div className="w-1.5 eq-bar"></div>
+                      <div className="w-1.5 eq-bar"></div>
+                      <div className="w-1.5 eq-bar"></div>
+                      <div className="w-1.5 eq-bar"></div>
+                    </>
+                  ) : (
+                    <div className="w-8 h-[2px] bg-zinc-700 mb-1"></div>
+                  )}
+                </div>
+                
+                <div className="flex-1 overflow-hidden">
+                  <div className="text-[10px] text-zinc-500 font-bold tracking-widest mb-1 uppercase flex justify-between">
+                    <span>// STREAMING_DATA</span>
+                    <span className="text-magenta-glitch">{PLAYLIST[currentTrackIdx].id}/3</span>
+                  </div>
+                  <div className="text-lg text-cyan-glitch font-pixel uppercase tracking-widest truncate">
+                    > {PLAYLIST[currentTrackIdx].title}.wav
+                  </div>
+                </div>
+              </div>
+
               {/* Volume Control */}
-              <div className="flex-1 flex justify-end hidden sm:flex">
-                <button onClick={toggleMute} className="p-3 text-slate-500 hover:text-cyan-400 transition-all hover:scale-110">
+              <div className="pl-6 border-l border-zinc-800 hidden sm:block">
+                <button onClick={toggleMute} className="p-2 border border-transparent text-zinc-500 hover:text-magenta-glitch hover:border-magenta-glitch transition-none">
                   {isMuted ? <IconVolumeX /> : <IconVolume2 />}
                 </button>
               </div>
@@ -380,12 +448,12 @@
               <audio ref={audioRef} src={PLAYLIST[currentTrackIdx].url} onEnded={nextTrack} />
             </div>
 
-            {/* Footer / Instructions */}
-            <div className="text-center w-full mt-2 hidden sm:block">
-              <p className="text-slate-500 text-xs tracking-widest uppercase font-bold">
-                Movement: <span className="text-cyan-400 bg-cyan-950/50 px-2 py-1 rounded border border-cyan-900/50">Arrows</span> / <span className="text-cyan-400 bg-cyan-950/50 px-2 py-1 rounded border border-cyan-900/50">WASD</span>
-                <span className="mx-4 text-slate-700">|</span>
-                Restart: <span className="text-fuchsia-400 bg-fuchsia-950/50 px-3 py-1 rounded border border-fuchsia-900/50">SPACE</span>
+            {/* Footer Commands */}
+            <div className="text-center w-full hidden sm:block mt-2">
+              <p className="text-zinc-500 text-xs tracking-widest uppercase">
+                [INPUT_VECTORS]: <span className="text-white border border-zinc-600 px-1 bg-zinc-900">ARROWS</span> / <span className="text-white border border-zinc-600 px-1 bg-zinc-900">WASD</span>
+                <span className="mx-4 text-zinc-700">||</span>
+                [INTERRUPT]: <span className="text-cyan-glitch border border-cyan-glitch px-1 bg-cyan-900/20">SPACE</span>
               </p>
             </div>
 
